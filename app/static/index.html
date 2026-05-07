@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Express Diagnostics Report Generator</title>
+  <style>
+    body { margin:0; font-family: Arial, Helvetica, sans-serif; background:#f3f4f6; color:#111827; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 32px 18px; }
+    .hero { background:#111827; color:white; border-radius:24px; padding:30px; box-shadow:0 20px 50px rgba(0,0,0,.18); }
+    .hero h1 { margin:0; font-size:32px; letter-spacing:.04em; }
+    .hero p { margin:8px 0 0; color:#d1d5db; }
+    .card { background:white; margin-top:22px; border-radius:20px; padding:24px; box-shadow:0 10px 30px rgba(0,0,0,.08); border:1px solid #e5e7eb; }
+    label { display:block; font-weight:700; margin:14px 0 8px; }
+    input, textarea { width:100%; box-sizing:border-box; border:1px solid #d1d5db; border-radius:12px; padding:12px; font-size:15px; }
+    textarea { min-height:220px; resize:vertical; }
+    button { margin-top:18px; border:0; background:#111827; color:white; border-radius:14px; padding:14px 18px; font-weight:800; cursor:pointer; font-size:15px; }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+    .result { display:none; background:#ecfdf5; border:1px solid #a7f3d0; padding:16px; border-radius:16px; margin-top:18px; }
+    .error { display:none; background:#fef2f2; border:1px solid #fecaca; padding:16px; border-radius:16px; margin-top:18px; }
+    .download { display:inline-block; margin-top:10px; font-weight:800; color:#065f46; }
+    .muted { color:#6b7280; font-size:13px; }
+    @media(max-width:700px){ .grid{grid-template-columns:1fr;} .hero h1{font-size:24px;} }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>EXPRESS DIAGNOSTICS</h1>
+      <p>Premium DTC + ADAS Report Generator</p>
+    </section>
+
+    <section class="card">
+      <h2>Generate Client-Ready Report</h2>
+      <p class="muted">Upload a scan report PDF or paste scan text. The system will create a branded PDF with DTC explanations, possible causes, potential fixes, and ADAS operations.</p>
+      <form id="form">
+        <div class="grid">
+          <div>
+            <label for="password">Employee Password</label>
+            <input id="password" name="password" type="password" placeholder="Leave blank unless enabled" />
+          </div>
+          <div>
+            <label for="file">Upload Scan PDF</label>
+            <input id="file" name="file" type="file" accept="application/pdf" />
+          </div>
+        </div>
+        <label for="scan_text">Or Paste Scan Text</label>
+        <textarea id="scan_text" name="scan_text" placeholder="Paste DTC section or full scan text here..."></textarea>
+        <button id="btn" type="submit">Generate Premium PDF</button>
+      </form>
+      <div class="result" id="result"></div>
+      <div class="error" id="error"></div>
+    </section>
+  </div>
+
+<script>
+const form = document.getElementById('form');
+const btn = document.getElementById('btn');
+const result = document.getElementById('result');
+const errorBox = document.getElementById('error');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  result.style.display = 'none';
+  errorBox.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+  try {
+    const data = new FormData(form);
+    const res = await fetch('/api/generate', { method:'POST', body:data });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.detail || 'Something went wrong');
+    const vehicle = json.vehicle?.vehicle || 'Vehicle not detected';
+    result.innerHTML = `<b>Report generated successfully.</b><br>
+      Vehicle: ${vehicle}<br>
+      DTCs detected: ${json.dtc_count}<br>
+      <a class="download" href="${json.download_url}" target="_blank">Download PDF Report</a>`;
+    result.style.display = 'block';
+  } catch (err) {
+    errorBox.textContent = err.message;
+    errorBox.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate Premium PDF';
+  }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,166 @@
+ADAS_MODULE_RULES = {
+    "IPMA": "Forward camera calibration / camera system verification",
+    "IPMB": "Forward camera calibration / image processing module verification",
+    "CCM": "Forward radar calibration / adaptive cruise control verification",
+    "C-CM": "Forward radar calibration / adaptive cruise control verification",
+    "SODL": "Left blind spot radar verification",
+    "SODR": "Right blind spot radar verification",
+    "PAM": "Parking aid sensor verification",
+    "PSCM": "Steering angle / lane keeping related verification",
+    "ABS": "ABS / stability control sensor verification",
+    "RCM": "Restraint system verification",
+    "BCM": "Body control / lighting / harness verification",
+    "BdyCM": "Body control / lighting / harness verification",
+    "GWM": "Gateway / network communication verification",
+    "RBM": "Running board module communication verification"
+}
+
+
+DTC_BASED_RULES = {
+    "B115E": "Forward camera calibration required / camera system verification",
+    "U0140": "Network communication verification required",
+    "U0146": "Gateway communication verification required",
+    "B1445": "Rear lighting circuit and rear body harness verification",
+    "B153E": "Trailer hitch lighting circuit and rear harness verification"
+}
+
+
+KEYWORD_RULES = {
+    "camera": "Forward camera calibration may be required",
+    "image processing": "Camera/image processing module verification required",
+    "radar": "Radar calibration or radar aiming verification may be required",
+    "cruise": "Adaptive cruise control verification may be required",
+    "blind spot": "Blind spot radar verification may be required",
+    "park": "Parking aid system verification may be required",
+    "steering": "Steering angle / lane keeping verification may be required",
+    "gateway": "Network gateway communication verification required",
+    "communication": "Network communication verification required",
+    "body control": "Body control module communication and harness verification",
+    "trailer": "Trailer wiring / rear harness inspection recommended",
+    "rear": "Rear body harness and rear sensor area inspection recommended"
+}
+
+
+IMPACT_AREA_RULES = {
+    "front": [
+        "Front impact review: inspect front camera, radar, bumper-mounted sensors, grille brackets, and aiming surfaces",
+        "Forward camera calibration recommended if windshield, camera bracket, suspension, alignment, or front body structure was affected",
+        "Forward radar calibration / aiming verification recommended if front bumper, grille, radar bracket, or front structure was affected",
+        "Pre-collision assist, adaptive cruise, and lane keeping functional validation"
+    ],
+    "rear": [
+        "Rear impact review: inspect rear body harness, parking sensors, trailer wiring, rear camera, and blind spot radar areas",
+        "Parking aid sensor verification recommended",
+        "Blind spot monitoring verification recommended if quarter panels, rear bumper, or side radar mounting areas were affected",
+        "Rear camera operation and alignment verification"
+    ],
+    "left_side": [
+        "Left side impact review: inspect left blind spot radar area, side sensors, door harnesses, and body wiring",
+        "Left blind spot radar verification recommended",
+        "Side object detection system functional validation"
+    ],
+    "right_side": [
+        "Right side impact review: inspect right blind spot radar area, side sensors, door harnesses, and body wiring",
+        "Right blind spot radar verification recommended",
+        "Side object detection system functional validation"
+    ],
+    "roof_glass": [
+        "Windshield/glass impact review: inspect camera bracket, windshield mounting area, and camera view path",
+        "Forward camera calibration recommended after windshield replacement or camera bracket disturbance",
+        "Lane keeping and pre-collision camera system validation"
+    ],
+    "suspension_steering": [
+        "Suspension/steering repair review: verify alignment, steering angle sensor, stability control data, and lane keeping inputs",
+        "Steering angle sensor calibration/initialization may be required",
+        "Lane keeping and stability control road test validation"
+    ],
+    "undercarriage": [
+        "Undercarriage impact review: inspect wiring, wheel speed sensors, ride height sensors, and chassis-related harnesses",
+        "ABS/stability control sensor verification recommended",
+        "Road test and chassis sensor validation"
+    ],
+    "multiple": [
+        "Multiple impact area review: verify all affected ADAS sensors, cameras, radar modules, wiring, and mounting points",
+        "OEM procedure review required for all affected repair areas",
+        "Complete system calibration and functional validation plan recommended"
+    ]
+}
+
+
+def detect_adas_operations(dtcs, impact_area=""):
+    operations = set()
+
+    operations.add("Pre-scan and post-scan documentation review")
+    operations.add("Confirm OEM repair procedures based on repair area and affected systems")
+
+    for d in dtcs:
+        module = d.get("module", "").upper()
+        desc = d.get("description", "").lower()
+        code = d.get("code", "").upper()
+        base_code = code.split(":")[0].split("-")[0]
+
+        for module_key, operation in ADAS_MODULE_RULES.items():
+            if module_key.upper() in module:
+                operations.add(operation)
+
+        if base_code in DTC_BASED_RULES:
+            operations.add(DTC_BASED_RULES[base_code])
+
+        for keyword, operation in KEYWORD_RULES.items():
+            if keyword in desc:
+                operations.add(operation)
+
+        if code.startswith("U"):
+            operations.add("CAN network health check / module communication verification")
+
+        if "IPMA" in module or "IPMB" in module:
+            operations.add("Forward camera calibration / camera aiming verification")
+            operations.add("Lane keep assist and pre-collision system functional validation")
+
+        if "C-CM" in module or "CCM" in module:
+            operations.add("Adaptive cruise / forward radar system verification")
+
+        if "PAM" in module:
+            operations.add("Parking aid sensor operation verification")
+
+        if "SODL" in module or "SODR" in module:
+            operations.add("Blind spot monitoring system verification")
+
+        if "PSCM" in module:
+            operations.add("Steering angle sensor / steering system calibration verification")
+
+        if "ABS" in module:
+            operations.add("ABS / stability control sensor verification")
+
+        if "RCM" in module:
+            operations.add("Restraint system post-repair verification")
+
+        if "BDYCM" in module or "BCM" in module:
+            operations.add("Lighting, body harness, and module communication verification")
+
+    if impact_area in IMPACT_AREA_RULES:
+        for item in IMPACT_AREA_RULES[impact_area]:
+            operations.add(item)
+
+    operations.add("Clear codes only after repairs are completed")
+    operations.add("Perform post-repair road test and functional validation")
+    operations.add("Complete final post-scan and confirm no related DTCs return")
+
+    return sorted(operations)
+
+
+def impact_area_label(value):
+    labels = {
+        "front": "Front Impact",
+        "rear": "Rear Impact",
+        "left_side": "Left Side Impact",
+        "right_side": "Right Side Impact",
+        "roof_glass": "Roof / Windshield / Glass",
+        "suspension_steering": "Suspension / Steering",
+        "undercarriage": "Undercarriage",
+        "multiple": "Multiple Impact Areas",
+        "": "Not specified",
+        "Not specified": "Not specified"
+    }
+
+    return labels.get(value, value or "Not specified")
