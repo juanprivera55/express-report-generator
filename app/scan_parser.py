@@ -8,6 +8,8 @@ import os
 # Windows-only Tesseract path
 if os.name == "nt":
     pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+else:
+    pytesseract.pytesseract.tesseract_cmd = "tesseract"
 
 DTC_RE = re.compile(
     r"\b([UBCP][0-9A-F]{4}(?::[0-9A-F]{2})?(?:-[0-9A-F]{2})?)\b\s*([^\n\r]*)",
