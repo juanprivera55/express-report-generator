@@ -3,8 +3,10 @@ import fitz
 import pytesseract
 from PIL import Image
 import io
+import os
 
-pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+if os.name == "nt":
+    pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 DTC_RE = re.compile(
     r"\b([UBCP][0-9A-F]{4}(?::[0-9A-F]{2})?(?:-[0-9A-F]{2})?)\b\s*([^\n\r]*)",
