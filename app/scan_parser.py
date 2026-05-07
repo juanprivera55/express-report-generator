@@ -4,12 +4,12 @@ import pytesseract
 from PIL import Image
 import io
 import os
+import shutil
 
-# Windows-only Tesseract path
 if os.name == "nt":
     pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 else:
-    pytesseract.pytesseract.tesseract_cmd = "tesseract"
+    pytesseract.pytesseract.tesseract_cmd = shutil.which("tesseract") or "/usr/bin/tesseract"
 
 DTC_RE = re.compile(
     r"\b([UBCP][0-9A-F]{4}(?::[0-9A-F]{2})?(?:-[0-9A-F]{2})?)\b\s*([^\n\r]*)",
