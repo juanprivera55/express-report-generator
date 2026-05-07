@@ -5,6 +5,7 @@ from PIL import Image
 import io
 import os
 
+# Windows-only Tesseract path
 if os.name == "nt":
     pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
