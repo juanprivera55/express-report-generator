@@ -11,14 +11,23 @@ if os.name == "nt":
 else:
     pytesseract.pytesseract.tesseract_cmd = shutil.which("tesseract") or "/usr/bin/tesseract"
 
-DTC_RE = re.compile(
-    r"\b([UBCP][0-9A-F]{4}(?::[0-9A-F]{2})?(?:-[0-9A-F]{2})?)\b\s*([^\n\r]*)",
+
+STANDARD_DTC_RE = re.compile(
+    r"\b([PCBU][0-9A-F]{4}(?::[0-9A-F]{2})?(?:-[0-9A-F]{2})?)\b\s*([^\n\r]*)",
     re.I
 )
 
-MODULE_RE = re.compile(r"^([A-Za-z0-9\-]+)\(([^\)]*)\)", re.I)
+# European / manufacturer style codes:
+# Examples: 00446, 01314, 930B, A0B5, C10ACF0, B201A00, U112300
+EURO_DTC_RE = re.compile(
+    r"\b([0-9]{4,6}|[A-F0-9]{4}|[PCBU][0-9A-F]{5,7})\b\s*([^\n\r]*)",
+    re.I
+)
+
+MODULE_RE = re.compile(r"^([A-Za-z0-9\-\/ ]{2,20})\(([^\)]*)\)", re.I)
+
 VIN_LINE_RE = re.compile(r"VIN\s*[:\-]?\s*([A-Z0-9]{15,20})", re.I)
-VIN_ANY_RE = re.compile(r"\b([A-Z0-9]{17})\b", re.I)
+VIN_ANY_RE = re.compile(r"\b([A-HJ-NPR-Z0-9]{17})\b", re.I)
 
 MILEAGE_PATTERNS = [
     re.compile(r"Odometer Reading\s*[:\-]?\s*([0-9,.]+)\s*miles?", re.I),
@@ -47,10 +56,8 @@ def clean_text(text: str) -> str:
 
 def normalize_possible_vin(vin: str) -> str:
     vin = vin.upper().strip().replace(" ", "")
-
     if len(vin) == 17 and vin.startswith("I"):
         vin = "1" + vin[1:]
-
     return vin
 
 
@@ -134,6 +141,14 @@ def detect_scan_type(text: str):
     return "Diagnostic Scan"
 
 
+def looks_like_bad_code(code: str):
+    bad_words = {
+        "PAGE", "TIME", "DATE", "NAME", "NOTE", "TEST", "SCAN",
+        "VIN", "HTTP", "WWW", "AUTO", "TRUE", "FALSE"
+    }
+    return code.upper() in bad_words
+
+
 def parse_scan_text(text: str):
     dtcs = []
     seen = set()
@@ -144,12 +159,20 @@ def parse_scan_text(text: str):
 
         module_match = MODULE_RE.match(line)
         if module_match:
-            current_module = f"{module_match.group(1)} ({module_match.group(2)})"
+            current_module = f"{module_match.group(1).strip()} ({module_match.group(2).strip()})"
 
-        dtc_match = DTC_RE.search(line)
-        if dtc_match:
-            code = dtc_match.group(1).upper()
-            desc = dtc_match.group(2).strip()
+        matches = list(STANDARD_DTC_RE.finditer(line))
+
+        # Only use European/manufacturer regex if no standard code was found.
+        if not matches:
+            matches = list(EURO_DTC_RE.finditer(line))
+
+        for match in matches:
+            code = match.group(1).upper().strip()
+            desc = match.group(2).strip()
+
+            if looks_like_bad_code(code):
+                continue
 
             key = f"{current_module}-{code}"
 
@@ -157,7 +180,7 @@ def parse_scan_text(text: str):
                 dtcs.append({
                     "module": current_module,
                     "code": code,
-                    "description": desc if desc else "No description detected"
+                    "description": desc if desc else "Manufacturer-specific fault code detected"
                 })
                 seen.add(key)
 

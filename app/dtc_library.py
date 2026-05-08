@@ -1,4 +1,5 @@
 DTC_LIBRARY = {
+    # Communication / network
     "U0140": {
         "meaning": "Lost communication with the Body Control Module.",
         "causes": [
@@ -30,6 +31,24 @@ DTC_LIBRARY = {
         ],
         "adas_impact": "Gateway communication issues can prevent ADAS modules from communicating properly."
     },
+    "U1123": {
+        "meaning": "Manufacturer-specific communication/data bus fault.",
+        "causes": [
+            "CAN/LIN network communication interruption",
+            "Module coding/adaptation issue",
+            "Low voltage event",
+            "Disconnected module or damaged wiring"
+        ],
+        "fixes": [
+            "Perform full network scan",
+            "Verify battery voltage and module communication",
+            "Inspect related wiring/connectors",
+            "Perform coding/adaptation checks if required"
+        ],
+        "adas_impact": "Communication faults may affect camera, radar, parking, stability, and driver assistance systems."
+    },
+
+    # Camera / ADAS
     "B115E": {
         "meaning": "Camera module / image processing system fault.",
         "causes": [
@@ -47,6 +66,8 @@ DTC_LIBRARY = {
         ],
         "adas_impact": "Critical ADAS concern. May affect lane keep assist, pre-collision assist, forward collision warning, and related camera-based systems."
     },
+
+    # Body / lighting
     "B1445": {
         "meaning": "Rear park lamp output circuit fault.",
         "causes": [
@@ -78,25 +99,150 @@ DTC_LIBRARY = {
             "Repair or replace damaged wiring"
         ],
         "adas_impact": "Rear wiring issues may overlap with parking aid, blind spot, and rear body harness inspection needs."
-    }
+    },
+
+    # Common powertrain
+    "P0300": {
+        "meaning": "Random or multiple cylinder misfire detected.",
+        "causes": [
+            "Ignition coil or spark plug issue",
+            "Fuel delivery concern",
+            "Vacuum leak",
+            "Engine mechanical issue"
+        ],
+        "fixes": [
+            "Check misfire data and freeze frame",
+            "Inspect ignition and fuel systems",
+            "Perform compression/leakdown testing if needed",
+            "Repair root cause and verify misfire counters"
+        ],
+        "adas_impact": "Engine performance faults may affect adaptive cruise, stability control, and drivability-related safety features."
+    },
+    "P0420": {
+        "meaning": "Catalyst system efficiency below threshold.",
+        "causes": [
+            "Failing catalytic converter",
+            "Exhaust leak",
+            "Oxygen sensor concern",
+            "Engine running condition issue"
+        ],
+        "fixes": [
+            "Inspect exhaust system",
+            "Review fuel trim and oxygen sensor data",
+            "Repair engine performance concerns first",
+            "Verify catalyst operation"
+        ],
+        "adas_impact": "Usually not directly ADAS-related, but should be resolved for emissions and drivability compliance."
+    },
 }
+
+
+def generic_by_code_family(code: str):
+    code = code.upper()
+
+    if code.startswith("P"):
+        return {
+            "meaning": "Powertrain-related diagnostic trouble code detected.",
+            "causes": [
+                "Engine, transmission, emissions, or drivability system concern",
+                "Sensor or actuator fault",
+                "Wiring or connector issue",
+                "Low voltage or intermittent operating condition"
+            ],
+            "fixes": [
+                "Review freeze frame and scan data",
+                "Perform pinpoint diagnostics for affected system",
+                "Inspect wiring, sensors, and connectors",
+                "Repair root cause and complete post-repair verification"
+            ],
+            "adas_impact": "Powertrain faults may affect adaptive cruise, stability control, or drivability-related safety systems depending on the vehicle."
+        }
+
+    if code.startswith("B"):
+        return {
+            "meaning": "Body or comfort/safety system diagnostic trouble code detected.",
+            "causes": [
+                "Body control module concern",
+                "Lighting, door, restraint, camera, or interior electronics issue",
+                "Wiring or connector damage",
+                "Module configuration or calibration concern"
+            ],
+            "fixes": [
+                "Identify affected body/safety system",
+                "Inspect related harnesses and connectors",
+                "Verify module communication and configuration",
+                "Perform calibration or initialization if required"
+            ],
+            "adas_impact": "Body faults may affect cameras, lighting, parking systems, blind spot systems, restraints, or other safety-related features."
+        }
+
+    if code.startswith("C"):
+        return {
+            "meaning": "Chassis-related diagnostic trouble code detected.",
+            "causes": [
+                "ABS/stability control concern",
+                "Steering angle, wheel speed, suspension, or brake system fault",
+                "Alignment or impact-related sensor issue",
+                "Wiring or connector problem"
+            ],
+            "fixes": [
+                "Inspect chassis and suspension-related sensors",
+                "Check wheel speed, steering angle, and stability control data",
+                "Verify alignment and steering/suspension repairs",
+                "Perform required calibrations and road test"
+            ],
+            "adas_impact": "Chassis faults can directly affect lane keeping, adaptive cruise, collision avoidance, ABS, and stability control systems."
+        }
+
+    if code.startswith("U"):
+        return {
+            "meaning": "Network communication diagnostic trouble code detected.",
+            "causes": [
+                "CAN/LIN/FlexRay communication issue",
+                "Low voltage or module reset",
+                "Disconnected or damaged module",
+                "Gateway or network wiring concern"
+            ],
+            "fixes": [
+                "Perform network health check",
+                "Verify battery voltage and grounds",
+                "Inspect affected module connectors",
+                "Confirm communication returns after repair"
+            ],
+            "adas_impact": "Network faults can prevent ADAS modules from communicating, calibrating, or reporting accurate system status."
+        }
+
+    # European/manufacturer numeric or hex codes
+    return {
+        "meaning": "Manufacturer-specific diagnostic trouble code detected.",
+        "causes": [
+            "Manufacturer-specific module fault",
+            "Sensor, actuator, wiring, or communication concern",
+            "Module coding/adaptation issue",
+            "Low voltage or intermittent fault"
+        ],
+        "fixes": [
+            "Review the affected module and scan description",
+            "Check OEM service information for code-specific diagnostics",
+            "Inspect related wiring, connectors, sensors, and mounting points",
+            "Perform coding, adaptation, calibration, or initialization if required"
+        ],
+        "adas_impact": "Manufacturer-specific faults should be reviewed with the affected module. If related to camera, radar, steering, braking, parking, gateway, or body systems, ADAS verification may be required."
+    }
 
 
 def lookup_dtc(code: str):
     base = code.split(":")[0].split("-")[0].upper()
-    return DTC_LIBRARY.get(base, {
-        "meaning": "This code indicates a detected fault in the related vehicle system or module.",
-        "causes": [
-            "Wiring or connector issue",
-            "Low voltage event",
-            "Sensor or module fault",
-            "Communication concern"
-        ],
-        "fixes": [
-            "Perform pinpoint diagnostics",
-            "Inspect wiring and connectors",
-            "Repair root cause",
-            "Clear codes and complete post-scan verification"
-        ],
-        "adas_impact": "ADAS impact should be verified based on the affected module and OEM repair procedures."
-    })
+
+    # Exact base lookup
+    if base in DTC_LIBRARY:
+        return DTC_LIBRARY[base]
+
+    # Some manufacturer codes include extra status digits. Try first 5, then first 4.
+    if len(base) > 5 and base[:5] in DTC_LIBRARY:
+        return DTC_LIBRARY[base[:5]]
+
+    if len(base) > 4 and base[:4] in DTC_LIBRARY:
+        return DTC_LIBRARY[base[:4]]
+
+    return generic_by_code_family(base)

@@ -1,4 +1,5 @@
 ADAS_MODULE_RULES = {
+    # Ford / general
     "IPMA": "Forward camera calibration / camera system verification",
     "IPMB": "Forward camera calibration / image processing module verification",
     "CCM": "Forward radar calibration / adaptive cruise control verification",
@@ -10,9 +11,48 @@ ADAS_MODULE_RULES = {
     "ABS": "ABS / stability control sensor verification",
     "RCM": "Restraint system verification",
     "BCM": "Body control / lighting / harness verification",
-    "BdyCM": "Body control / lighting / harness verification",
+    "BDYCM": "Body control / lighting / harness verification",
     "GWM": "Gateway / network communication verification",
-    "RBM": "Running board module communication verification"
+
+    # GM / Stellantis / general naming
+    "SDM": "Restraint / safety module verification",
+    "EBCM": "Brake / stability control verification",
+    "BCM": "Body control and lighting system verification",
+    "RADAR": "Radar calibration / radar aiming verification",
+    "CAMERA": "Camera calibration / camera aiming verification",
+    "PARK": "Parking aid verification",
+
+    # Toyota / Lexus
+    "PCS": "Pre-collision system verification",
+    "LDA": "Lane departure / lane trace assist verification",
+    "BSM": "Blind spot monitoring verification",
+    "ICS": "Parking support / clearance sonar verification",
+
+    # Honda / Acura
+    "LKAS": "Lane keeping assist camera verification",
+    "CMBS": "Collision mitigation braking system verification",
+    "ACC": "Adaptive cruise control verification",
+
+    # VW / Audi
+    "A5": "VW/Audi front camera / lane assist calibration verification",
+    "13": "VW/Audi adaptive cruise radar verification",
+    "3C": "VW/Audi lane change assist / blind spot verification",
+    "19": "VW/Audi gateway / network verification",
+    "03": "VW/Audi ABS / stability control verification",
+    "09": "VW/Audi central electronics / body system verification",
+
+    # BMW / Mini
+    "KAFAS": "BMW/Mini forward camera calibration / driver assistance verification",
+    "DSC": "BMW/Mini stability control verification",
+    "BDC": "BMW body domain controller / body system verification",
+    "FEM": "BMW front electronic module / body system verification",
+    "REM": "BMW rear electronic module / rear body system verification",
+
+    # Mercedes-Benz
+    "DISTRONIC": "Mercedes radar / adaptive cruise verification",
+    "ESP": "Mercedes stability control verification",
+    "SAM": "Mercedes body electrical / signal acquisition module verification",
+    "MULTIFUNCTION CAMERA": "Mercedes multifunction camera calibration verification",
 }
 
 
@@ -21,23 +61,33 @@ DTC_BASED_RULES = {
     "U0140": "Network communication verification required",
     "U0146": "Gateway communication verification required",
     "B1445": "Rear lighting circuit and rear body harness verification",
-    "B153E": "Trailer hitch lighting circuit and rear harness verification"
+    "B153E": "Trailer hitch lighting circuit and rear harness verification",
+    "U1123": "Manufacturer-specific network/data bus verification required",
 }
 
 
 KEYWORD_RULES = {
     "camera": "Forward camera calibration may be required",
     "image processing": "Camera/image processing module verification required",
+    "front assist": "Forward camera/radar driver assistance verification recommended",
+    "lane": "Lane keeping / lane assist verification recommended",
     "radar": "Radar calibration or radar aiming verification may be required",
     "cruise": "Adaptive cruise control verification may be required",
+    "acc": "Adaptive cruise control verification may be required",
     "blind spot": "Blind spot radar verification may be required",
+    "lane change": "Blind spot / lane change assist verification may be required",
     "park": "Parking aid system verification may be required",
+    "parking": "Parking aid system verification may be required",
     "steering": "Steering angle / lane keeping verification may be required",
     "gateway": "Network gateway communication verification required",
     "communication": "Network communication verification required",
     "body control": "Body control module communication and harness verification",
     "trailer": "Trailer wiring / rear harness inspection recommended",
-    "rear": "Rear body harness and rear sensor area inspection recommended"
+    "rear": "Rear body harness and rear sensor area inspection recommended",
+    "brake": "Brake / stability control verification recommended",
+    "abs": "ABS / stability control verification recommended",
+    "restraint": "Restraint system verification recommended",
+    "airbag": "Restraint system verification recommended",
 }
 
 
@@ -100,11 +150,17 @@ def detect_adas_operations(dtcs, impact_area=""):
         base_code = code.split(":")[0].split("-")[0]
 
         for module_key, operation in ADAS_MODULE_RULES.items():
-            if module_key.upper() in module:
+            if module_key.upper() in module or module_key.upper() in desc.upper():
                 operations.add(operation)
 
         if base_code in DTC_BASED_RULES:
             operations.add(DTC_BASED_RULES[base_code])
+
+        if len(base_code) > 5 and base_code[:5] in DTC_BASED_RULES:
+            operations.add(DTC_BASED_RULES[base_code[:5]])
+
+        if len(base_code) > 4 and base_code[:4] in DTC_BASED_RULES:
+            operations.add(DTC_BASED_RULES[base_code[:4]])
 
         for keyword, operation in KEYWORD_RULES.items():
             if keyword in desc:
@@ -113,30 +169,14 @@ def detect_adas_operations(dtcs, impact_area=""):
         if code.startswith("U"):
             operations.add("CAN network health check / module communication verification")
 
-        if "IPMA" in module or "IPMB" in module:
-            operations.add("Forward camera calibration / camera aiming verification")
-            operations.add("Lane keep assist and pre-collision system functional validation")
+        if code.startswith("C"):
+            operations.add("Chassis, steering, ABS, or stability control verification")
 
-        if "C-CM" in module or "CCM" in module:
-            operations.add("Adaptive cruise / forward radar system verification")
+        if code.startswith("B"):
+            operations.add("Body, safety, camera, parking, lighting, or comfort system verification")
 
-        if "PAM" in module:
-            operations.add("Parking aid sensor operation verification")
-
-        if "SODL" in module or "SODR" in module:
-            operations.add("Blind spot monitoring system verification")
-
-        if "PSCM" in module:
-            operations.add("Steering angle sensor / steering system calibration verification")
-
-        if "ABS" in module:
-            operations.add("ABS / stability control sensor verification")
-
-        if "RCM" in module:
-            operations.add("Restraint system post-repair verification")
-
-        if "BDYCM" in module or "BCM" in module:
-            operations.add("Lighting, body harness, and module communication verification")
+        if code.startswith("P"):
+            operations.add("Powertrain fault review and post-repair drivability validation")
 
     if impact_area in IMPACT_AREA_RULES:
         for item in IMPACT_AREA_RULES[impact_area]:
