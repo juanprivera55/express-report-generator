@@ -26,7 +26,7 @@ def build_pdf_report(data, output_path, report_type="customer"):
     impact_area = intake.get("impact_area", "")
     impact_label = impact_area_label(impact_area)
 
-    adas_operations = detect_adas_operations(dtcs, impact_area=impact_area)
+    adas_operations = detect_adas_operations(dtcs, impact_area=impact_area, vehicle_info=vehicle_info)
 
     is_insurance = report_type == "insurance"
 
