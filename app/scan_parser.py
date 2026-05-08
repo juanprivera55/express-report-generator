@@ -17,14 +17,12 @@ STANDARD_DTC_RE = re.compile(
     re.I
 )
 
-# European / manufacturer style codes:
-# Examples: 00446, 01314, 930B, A0B5, C10ACF0, B201A00, U112300
 EURO_DTC_RE = re.compile(
     r"\b([0-9]{4,6}|[A-F0-9]{4}|[PCBU][0-9A-F]{5,7})\b\s*([^\n\r]*)",
     re.I
 )
 
-MODULE_RE = re.compile(r"^([A-Za-z0-9\-\/ ]{2,20})\(([^\)]*)\)", re.I)
+MODULE_RE = re.compile(r"^([A-Za-z0-9\-\/ ]{2,25})\(([^\)]*)\)", re.I)
 
 VIN_LINE_RE = re.compile(r"VIN\s*[:\-]?\s*([A-Z0-9]{15,20})", re.I)
 VIN_ANY_RE = re.compile(r"\b([A-HJ-NPR-Z0-9]{17})\b", re.I)
@@ -32,7 +30,6 @@ VIN_ANY_RE = re.compile(r"\b([A-HJ-NPR-Z0-9]{17})\b", re.I)
 MILEAGE_PATTERNS = [
     re.compile(r"Odometer Reading\s*[:\-]?\s*([0-9,.]+)\s*miles?", re.I),
     re.compile(r"(?:Mileage|Odometer|Miles|Vehicle Mileage)\s*[:\-]?\s*([0-9,.]+)", re.I),
-    re.compile(r"\b([0-9]{3,6}(?:\.[0-9]+)?)\s*miles?\b", re.I),
 ]
 
 DATE_PATTERNS = [
@@ -142,20 +139,66 @@ def detect_scan_type(text: str):
 
 
 def looks_like_bad_code(code: str):
+    code = code.upper().strip()
+
     bad_words = {
         "PAGE", "TIME", "DATE", "NAME", "NOTE", "TEST", "SCAN",
         "VIN", "HTTP", "WWW", "AUTO", "TRUE", "FALSE"
     }
-    return code.upper() in bad_words
+
+    if code in bad_words:
+        return True
+
+    # Prevent years from being captured as DTCs
+    if code.isdigit():
+        number = int(code)
+        if 1980 <= number <= 2099:
+            return True
+
+    return False
+
+
+def line_is_dtc_context(line: str, in_dtc_section: bool):
+    lower = line.lower()
+
+    if in_dtc_section:
+        return True
+
+    context_words = [
+        "dtc",
+        "fault",
+        "trouble code",
+        "description",
+        "status",
+        "stored",
+        "current",
+        "history",
+        "intermittent",
+        "cmdtcs"
+    ]
+
+    return any(word in lower for word in context_words)
 
 
 def parse_scan_text(text: str):
     dtcs = []
     seen = set()
     current_module = "Unknown Module"
+    in_dtc_section = False
 
     for line in text.splitlines():
         line = line.strip()
+
+        if not line:
+            continue
+
+        lower = line.lower()
+
+        if "pre-scan dtc" in lower or "post-scan dtc" in lower or "dtc description status" in lower:
+            in_dtc_section = True
+
+        if "technician notes" in lower or "vehicle information" in lower or "customer information" in lower:
+            in_dtc_section = False
 
         module_match = MODULE_RE.match(line)
         if module_match:
@@ -163,8 +206,8 @@ def parse_scan_text(text: str):
 
         matches = list(STANDARD_DTC_RE.finditer(line))
 
-        # Only use European/manufacturer regex if no standard code was found.
-        if not matches:
+        # European/manufacturer numeric codes only count inside a DTC/fault context
+        if not matches and line_is_dtc_context(line, in_dtc_section):
             matches = list(EURO_DTC_RE.finditer(line))
 
         for match in matches:
