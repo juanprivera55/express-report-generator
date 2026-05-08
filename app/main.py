@@ -6,6 +6,7 @@ import uuid
 from app.scan_parser import extract_text_from_pdf, parse_scan_text
 from app.report_builder import build_pdf_report
 from app.unknown_dtc_tracker import track_unknown_dtcs
+from app.vin_decoder import decode_vin
 
 app = FastAPI()
 
@@ -171,6 +172,34 @@ async def upload(
 
     raw_text = extract_text_from_pdf(str(upload_path))
     parsed = parse_scan_text(raw_text)
+
+    vehicle_info = parsed.get("vehicle_info", {})
+    vin = vehicle_info.get("vin", "")
+
+    vin_data = await decode_vin(vin)
+
+    if vin_data:
+        decoded_vehicle = " ".join([
+            vin_data.get("year", ""),
+            vin_data.get("make", ""),
+            vin_data.get("model", ""),
+            vin_data.get("trim", "")
+        ]).replace("Unknown", "").strip()
+
+        if decoded_vehicle:
+            vehicle_info["vehicle"] = decoded_vehicle
+
+        vehicle_info["decoded_year"] = vin_data.get("year", "Unknown")
+        vehicle_info["decoded_make"] = vin_data.get("make", "Unknown")
+        vehicle_info["decoded_model"] = vin_data.get("model", "Unknown")
+        vehicle_info["decoded_trim"] = vin_data.get("trim", "Unknown")
+        vehicle_info["body_class"] = vin_data.get("body_class", "Unknown")
+        vehicle_info["vehicle_type"] = vin_data.get("vehicle_type", "Unknown")
+        vehicle_info["engine"] = vin_data.get("engine", "Unknown")
+        vehicle_info["drive_type"] = vin_data.get("drive_type", "Unknown")
+        vehicle_info["plant_country"] = vin_data.get("plant_country", "Unknown")
+
+        parsed["vehicle_info"] = vehicle_info
 
     parsed["intake"] = {
         "customer_name": customer_name or "Not provided",
