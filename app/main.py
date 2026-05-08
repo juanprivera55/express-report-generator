@@ -5,6 +5,7 @@ import uuid
 
 from app.scan_parser import extract_text_from_pdf, parse_scan_text
 from app.report_builder import build_pdf_report
+from app.unknown_dtc_tracker import track_unknown_dtcs
 
 app = FastAPI()
 
@@ -70,6 +71,11 @@ def home():
 
             <button type="button" onclick="generatePdf()">Generate PDF Report</button>
             <button type="button" onclick="debugText()">View Extracted Text</button>
+
+            <br><br>
+            <a href="/unknown-dtcs" target="_blank">
+                <button type="button">Download Unknown DTC Database</button>
+            </a>
         </form>
 
         <p id="status"></p>
@@ -177,6 +183,8 @@ async def upload(
         "technician_notes": technician_notes or "None provided"
     }
 
+    track_unknown_dtcs(parsed)
+
     build_pdf_report(parsed, str(report_path), report_type=report_type)
 
     filename = (
@@ -203,3 +211,20 @@ async def debug_text(file: UploadFile = File(...)):
     raw_text = extract_text_from_pdf(str(upload_path))
 
     return PlainTextResponse(raw_text[:12000])
+
+
+@app.get("/unknown-dtcs")
+async def download_unknown_dtcs():
+    path = Path("unknown_dtcs.csv")
+
+    if not path.exists():
+        path.write_text(
+            "timestamp,vehicle,vin,make_model,ro_number,impact_area,module,code,description,reviewed,meaning,possible_causes,recommended_fixes,adas_impact\n",
+            encoding="utf-8"
+        )
+
+    return FileResponse(
+        path=str(path),
+        filename="unknown_dtcs.csv",
+        media_type="text/csv"
+    )

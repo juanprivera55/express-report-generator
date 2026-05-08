@@ -246,3 +246,17 @@ def lookup_dtc(code: str):
         return DTC_LIBRARY[base[:4]]
 
     return generic_by_code_family(base)
+
+def is_known_dtc(code: str):
+    base = code.split(":")[0].split("-")[0].upper()
+
+    if base in DTC_LIBRARY:
+        return True
+
+    if len(base) > 5 and base[:5] in DTC_LIBRARY:
+        return True
+
+    if len(base) > 4 and base[:4] in DTC_LIBRARY:
+        return True
+
+    return False
