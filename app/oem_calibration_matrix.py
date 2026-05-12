@@ -219,7 +219,35 @@ def build_oem_calibration_matrix(
             "HIGH",
             "Multiple repair areas require broader post-repair validation."
         )
+        # HONDA / ACURA COLLISION-SPECIFIC SAFETY LOGIC
+    is_honda_acura = any(x in vehicle_text for x in ["honda", "acura"])
 
+    collision_indicated = (
+        impact_area not in ["", "Not specified", None]
+        or "collision" in combined
+        or "impact" in combined
+        or "supplement" in combined
+        or "repair" in combined
+    )
+
+    if is_honda_acura and collision_indicated:
+        add(
+            "Seat weight sensor initialization / passenger weight sensor check",
+            "HIGH",
+            "Honda/Acura collision-related service logic: passenger seat weight sensor initialization or verification should be reviewed after collision repairs."
+        )
+
+        add(
+            "SRS deployment history check",
+            "HIGH",
+            "Honda/Acura collision-related service logic: SRS deployment history should be checked when the vehicle has been involved in a collision."
+        )
+
+        add(
+            "VSA sensor neutral position memorization review",
+            "MODERATE",
+            "Honda/Acura collision-related service logic: VSA/steering sensor neutral position memorization may be required when alignment, steering, suspension, or aiming operations are involved."
+        )
     # DTC-BASED INTELLIGENCE
     if any(x in dtc_text for x in ["communication", "gateway", "u0140", "u0146", "u1123"]):
         add(
