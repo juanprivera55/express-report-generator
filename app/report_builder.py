@@ -10,9 +10,10 @@ from reportlab.lib.units import inch
 from app.dtc_library import lookup_dtc
 from app.adas_rules import detect_adas_operations, impact_area_label
 from app.adas_equipment import detect_probable_adas_equipment
+from app.oem_calibration_matrix import build_oem_calibration_matrix
+
 
 LOGO_PATH = "assets/logo.png"
-
 
 BRAND_RED = colors.HexColor("#C40000")
 DARK = colors.HexColor("#111111")
@@ -127,11 +128,19 @@ def make_info_table(rows, table_label, table_text):
 def build_pdf_report(data, output_path, report_type="customer"):
     dtcs = data.get("dtcs", [])
     vehicle_info = data.get("vehicle_info", {})
-    adas_equipment = detect_probable_adas_equipment(vehicle_info)
     intake = data.get("intake", {})
 
     impact_area = intake.get("impact_area", "")
     impact_label = impact_area_label(impact_area)
+
+    adas_equipment = detect_probable_adas_equipment(vehicle_info)
+
+    oem_matrix = build_oem_calibration_matrix(
+        vehicle_info,
+        dtcs,
+        adas_equipment,
+        impact_area
+    )
 
     adas_operations = detect_adas_operations(
         dtcs,
@@ -241,7 +250,7 @@ def build_pdf_report(data, output_path, report_type="customer"):
     story.append(header)
     story.append(Spacer(1, 12))
 
-    # TOP EXECUTIVE SUMMARY CARDS
+    # SUMMARY CARDS
     summary_card_style = ParagraphStyle(
         "SummaryCard",
         parent=styles["BodyText"],
@@ -321,7 +330,7 @@ def build_pdf_report(data, output_path, report_type="customer"):
     story.append(make_info_table(vehicle_rows, table_label, table_text))
     story.append(Spacer(1, 12))
 
-        # PROBABLE ADAS EQUIPMENT
+    # PROBABLE ADAS EQUIPMENT
     story.append(make_section_header("Probable ADAS Equipment", styles))
     story.append(Spacer(1, 6))
 
@@ -341,12 +350,10 @@ def build_pdf_report(data, output_path, report_type="customer"):
         ("LEFTPADDING", (0, 0), (-1, -1), 9),
         ("RIGHTPADDING", (0, 0), (-1, -1), 9),
     ]))
-
     story.append(adas_intro_table)
     story.append(Spacer(1, 8))
 
     equipment_rows = []
-
     for item in adas_equipment:
         confidence = item.get("confidence", "Unknown")
         name = item.get("name", "Unknown System")
@@ -364,23 +371,21 @@ def build_pdf_report(data, output_path, report_type="customer"):
             p(f"<b>{name}</b><br/>{reason}", table_text)
         ])
 
-    equipment_table = Table(
-        equipment_rows,
-        colWidths=[110, 400]
-    )
+    if equipment_rows:
+        equipment_table = Table(equipment_rows, colWidths=[110, 400])
+        equipment_table.setStyle(TableStyle([
+            ("GRID", (0, 0), (-1, -1), 0.35, MID_GRAY),
+            ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("TOPPADDING", (0, 0), (-1, -1), 7),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+            ("LEFTPADDING", (0, 0), (-1, -1), 7),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+        ]))
+        story.append(equipment_table)
 
-    equipment_table.setStyle(TableStyle([
-        ("GRID", (0, 0), (-1, -1), 0.35, MID_GRAY),
-        ("BACKGROUND", (0, 0), (-1, -1), colors.white),
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("TOPPADDING", (0, 0), (-1, -1), 7),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
-        ("LEFTPADDING", (0, 0), (-1, -1), 7),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 7),
-    ]))
-
-    story.append(equipment_table)
     story.append(Spacer(1, 12))
+
     # SCAN SUMMARY
     story.append(make_section_header("Scan Summary", styles))
     story.append(Spacer(1, 6))
@@ -468,6 +473,64 @@ def build_pdf_report(data, output_path, report_type="customer"):
 
         story.append(KeepTogether([dtc_header, dtc_table, Spacer(1, 10)]))
 
+    # OEM CALIBRATION MATRIX
+    story.append(make_section_header("OEM-Style Calibration Matrix", styles))
+    story.append(Spacer(1, 6))
+
+    matrix_intro = """
+    The following recommendations were generated using VIN-based equipment analysis,
+    scan results, detected modules, DTC activity, and selected impact area.
+    These recommendations are intended to support OEM repair planning and calibration review.
+    Final repair requirements must always be verified using manufacturer repair procedures.
+    """
+
+    matrix_intro_table = Table([[p(matrix_intro, normal)]], colWidths=[510])
+    matrix_intro_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F5F3FF")),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#C4B5FD")),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("LEFTPADDING", (0, 0), (-1, -1), 9),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 9),
+    ]))
+    story.append(matrix_intro_table)
+    story.append(Spacer(1, 8))
+
+    matrix_rows = []
+    for item in oem_matrix:
+        confidence = item.get("confidence", "MODERATE")
+        system = item.get("system", "Unknown")
+        reason = item.get("reason", "")
+
+        if confidence == "HIGH":
+            conf_color = RED
+        elif confidence == "MODERATE":
+            conf_color = YELLOW
+        else:
+            conf_color = TEXT_GRAY
+
+        matrix_rows.append([
+            build_badge(confidence, conf_color),
+            p(f"<b>{system}</b><br/>{reason}", table_text)
+        ])
+
+    if matrix_rows:
+        matrix_table = Table(matrix_rows, colWidths=[110, 400])
+        matrix_table.setStyle(TableStyle([
+            ("GRID", (0, 0), (-1, -1), 0.35, MID_GRAY),
+            ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("TOPPADDING", (0, 0), (-1, -1), 7),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+            ("LEFTPADDING", (0, 0), (-1, -1), 7),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+        ]))
+        story.append(matrix_table)
+    else:
+        story.append(p("No specific OEM-style calibration matrix items were generated based on the current scan and impact inputs.", normal))
+
+    story.append(Spacer(1, 12))
+
     # ADAS / CALIBRATION SECTION
     story.append(make_section_header(
         "Calibration / ADAS Recommendation Engine"
@@ -532,7 +595,7 @@ def build_pdf_report(data, output_path, report_type="customer"):
     story.append(p(statement, normal))
     story.append(Spacer(1, 14))
 
-    # FOOTER BLOCK
+    # FOOTER
     footer_table = Table([
         [
             p("<b>EXPRESS DIAGNOSTICS</b><br/>Precision. Safety. Confidence.", small),
