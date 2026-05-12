@@ -1,10 +1,11 @@
-from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 import uuid
 
 from app.scan_parser import extract_text_from_pdf, parse_scan_text
+from app.estimate_parser import parse_estimate_text
 from app.report_builder import build_pdf_report
 from app.unknown_dtc_tracker import track_unknown_dtcs
 from app.vin_decoder import decode_vin
@@ -22,50 +23,40 @@ REPORT_DIR.mkdir(exist_ok=True)
 def home():
     return """
     <html>
-    <body style="font-family:Arial; max-width:900px; margin:40px auto; padding:20px;">
-        <div style="
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:25px;
-">
+    <body style="font-family:Arial; max-width:900px; margin:40px auto; padding:20px; background:#f5f7fa;">
 
-    <div>
-        <h1 style="margin:0; color:#111;">
-            Express Diagnostics Report Generator
-        </h1>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
+            <div>
+                <h1 style="margin:0; color:#111;">Express Diagnostics Report Generator</h1>
+                <p style="margin-top:6px; color:#555;">Advanced Vehicle Diagnostic & ADAS Analysis Platform</p>
+            </div>
 
-        <p style="margin-top:6px; color:#555;">
-            Advanced Vehicle Diagnostic & ADAS Analysis Platform
-        </p>
-    </div>
-
-    <div style="
-    display:flex;
-    align-items:center;
-    justify-content:flex-end;
-    min-width:260px;
-">
-
-    <img
-        src="/static/potato_logo.png"
-        style="
-            width:220px;
-            height:auto;
-            object-fit:contain;
-            border-radius:18px;
-            padding:8px;
-            background:white;
-            box-shadow:0 8px 24px rgba(0,0,0,0.12);
-            border:1px solid rgba(0,0,0,0.08);
-        "
-    />
-
-</div>
+            <div style="display:flex; align-items:center; justify-content:flex-end; min-width:260px;">
+                <img
+                    src="/static/potato_logo.png"
+                    style="
+                        width:220px;
+                        height:auto;
+                        object-fit:contain;
+                        border-radius:18px;
+                        padding:8px;
+                        background:white;
+                        box-shadow:0 8px 24px rgba(0,0,0,0.12);
+                        border:1px solid rgba(0,0,0,0.08);
+                    "
+                />
+            </div>
+        </div>
 
         <form id="form">
             <h3>Scan Upload</h3>
             <input type="file" id="file" accept=".pdf" required>
+
+            <h3>Optional Estimate Upload</h3>
+            <p style="color:#555; margin-top:-8px;">
+                Upload CCC, Mitchell, Audatex, or repair estimate PDF to detect calibration triggers.
+            </p>
+            <input type="file" id="estimate_file" accept=".pdf">
 
             <h3>Report Version</h3>
             <select id="report_type">
@@ -124,10 +115,18 @@ def home():
         <script>
         async function sendFile(endpoint) {
             const fileInput = document.getElementById("file");
+            const estimateInput = document.getElementById("estimate_file");
+
             const file = fileInput.files[0];
+            const estimateFile = estimateInput.files[0];
 
             const formData = new FormData();
             formData.append("file", file);
+
+            if (estimateFile) {
+                formData.append("estimate_file", estimateFile);
+            }
+
             formData.append("report_type", document.getElementById("report_type").value);
             formData.append("customer_name", document.getElementById("customer_name").value);
             formData.append("ro_number", document.getElementById("ro_number").value);
@@ -192,6 +191,7 @@ def home():
 @app.post("/upload")
 async def upload(
     file: UploadFile = File(...),
+    estimate_file: UploadFile | None = File(None),
     report_type: str = Form("customer"),
     customer_name: str = Form(""),
     ro_number: str = Form(""),
@@ -211,6 +211,21 @@ async def upload(
 
     raw_text = extract_text_from_pdf(str(upload_path))
     parsed = parse_scan_text(raw_text)
+
+    # Optional estimate parsing
+    parsed["estimate_analysis"] = {
+        "estimate_triggers": [],
+        "estimate_recommendations": []
+    }
+
+    if estimate_file is not None:
+        estimate_path = UPLOAD_DIR / f"estimate_{file_id}.pdf"
+
+        with open(estimate_path, "wb") as f:
+            f.write(await estimate_file.read())
+
+        estimate_text = extract_text_from_pdf(str(estimate_path))
+        parsed["estimate_analysis"] = parse_estimate_text(estimate_text)
 
     vehicle_info = parsed.get("vehicle_info", {})
     vin = vehicle_info.get("vin", "")
@@ -269,7 +284,10 @@ async def upload(
 
 
 @app.post("/debug-text")
-async def debug_text(file: UploadFile = File(...)):
+async def debug_text(
+    file: UploadFile = File(...),
+    estimate_file: UploadFile | None = File(None)
+):
     file_id = str(uuid.uuid4())
     upload_path = UPLOAD_DIR / f"debug_{file_id}.pdf"
 
@@ -278,7 +296,16 @@ async def debug_text(file: UploadFile = File(...)):
 
     raw_text = extract_text_from_pdf(str(upload_path))
 
-    return PlainTextResponse(raw_text[:12000])
+    if estimate_file is not None:
+        estimate_path = UPLOAD_DIR / f"debug_estimate_{file_id}.pdf"
+
+        with open(estimate_path, "wb") as f:
+            f.write(await estimate_file.read())
+
+        estimate_text = extract_text_from_pdf(str(estimate_path))
+        raw_text += "\\n\\n===== ESTIMATE TEXT =====\\n\\n" + estimate_text
+
+    return PlainTextResponse(raw_text[:18000])
 
 
 @app.get("/unknown-dtcs")
@@ -287,7 +314,7 @@ async def download_unknown_dtcs():
 
     if not path.exists():
         path.write_text(
-            "timestamp,vehicle,vin,make_model,ro_number,impact_area,module,code,description,reviewed,meaning,possible_causes,recommended_fixes,adas_impact\n",
+            "timestamp,vehicle,vin,make_model,ro_number,impact_area,module,code,description,reviewed,meaning,possible_causes,recommended_fixes,adas_impact\\n",
             encoding="utf-8"
         )
 
