@@ -1,3 +1,4 @@
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, FileResponse, PlainTextResponse
 from pathlib import Path
@@ -9,6 +10,7 @@ from app.unknown_dtc_tracker import track_unknown_dtcs
 from app.vin_decoder import decode_vin
 
 app = FastAPI()
+app.mount("/static", StaticFiles(directory="assets"), name="static")
 
 UPLOAD_DIR = Path("uploads")
 REPORT_DIR = Path("generated_reports")
