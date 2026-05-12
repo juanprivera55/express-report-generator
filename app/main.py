@@ -21,8 +21,34 @@ def home():
     return """
     <html>
     <body style="font-family:Arial; max-width:900px; margin:40px auto; padding:20px;">
-        <h1>Express Diagnostics Report Generator</h1>
-        <p>Upload a scan report and add job details before generating the customer or insurance report.</p>
+        <div style="
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:25px;
+">
+
+    <div>
+        <h1 style="margin:0; color:#111;">
+            Express Diagnostics Report Generator
+        </h1>
+
+        <p style="margin-top:6px; color:#555;">
+            Advanced Vehicle Diagnostic & ADAS Analysis Platform
+        </p>
+    </div>
+
+    <img
+        src="/static/potato_logo.png"
+        style="
+            height:120px;
+            object-fit:contain;
+            border-radius:14px;
+            box-shadow:0 4px 18px rgba(0,0,0,0.15);
+        "
+    />
+
+</div>
 
         <form id="form">
             <h3>Scan Upload</h3>
