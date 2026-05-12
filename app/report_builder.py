@@ -146,7 +146,7 @@ def build_pdf_report(data, output_path, report_type="customer"):
         else "Customer Ready Diagnostic & ADAS Report"
     )
 
-    calibration_flag = calibration_status(adas_operations)
+    calibration_flag, calibration_color = calibration_status(adas_operations)
     has_dtcs = len(dtcs) > 0
     has_adas_flag = calibration_flag != "No ADAS Calibration Flag Detected"
 
