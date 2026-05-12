@@ -9,7 +9,7 @@ from reportlab.lib.units import inch
 
 from app.dtc_library import lookup_dtc
 from app.adas_rules import detect_adas_operations, impact_area_label
-
+from app.adas_equipment import detect_probable_adas_equipment
 
 LOGO_PATH = "assets/logo.png"
 
@@ -127,6 +127,7 @@ def make_info_table(rows, table_label, table_text):
 def build_pdf_report(data, output_path, report_type="customer"):
     dtcs = data.get("dtcs", [])
     vehicle_info = data.get("vehicle_info", {})
+    adas_equipment = detect_probable_adas_equipment(vehicle_info)
     intake = data.get("intake", {})
 
     impact_area = intake.get("impact_area", "")
@@ -320,6 +321,66 @@ def build_pdf_report(data, output_path, report_type="customer"):
     story.append(make_info_table(vehicle_rows, table_label, table_text))
     story.append(Spacer(1, 12))
 
+        # PROBABLE ADAS EQUIPMENT
+    story.append(make_section_header("Probable ADAS Equipment", styles))
+    story.append(Spacer(1, 6))
+
+    adas_intro = """
+    The following systems are likely equipped or potentially equipped based on VIN decoding,
+    manufacturer patterns, trim analysis, and detected vehicle information.
+    Final equipment confirmation should always be verified using OEM build data,
+    scan tool module identification, or physical inspection.
+    """
+
+    adas_intro_table = Table([[p(adas_intro, normal)]], colWidths=[510])
+    adas_intro_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#EFF6FF")),
+        ("BOX", (0, 0), (-1, -1), 0.5, colors.HexColor("#93C5FD")),
+        ("TOPPADDING", (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("LEFTPADDING", (0, 0), (-1, -1), 9),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 9),
+    ]))
+
+    story.append(adas_intro_table)
+    story.append(Spacer(1, 8))
+
+    equipment_rows = []
+
+    for item in adas_equipment:
+        confidence = item.get("confidence", "Unknown")
+        name = item.get("name", "Unknown System")
+        reason = item.get("reason", "")
+
+        if confidence == "Likely":
+            conf_color = GREEN
+        elif confidence == "Possible":
+            conf_color = YELLOW
+        else:
+            conf_color = TEXT_GRAY
+
+        equipment_rows.append([
+            build_badge(confidence.upper(), conf_color),
+            p(f"<b>{name}</b><br/>{reason}", table_text)
+        ])
+
+    equipment_table = Table(
+        equipment_rows,
+        colWidths=[110, 400]
+    )
+
+    equipment_table.setStyle(TableStyle([
+        ("GRID", (0, 0), (-1, -1), 0.35, MID_GRAY),
+        ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("TOPPADDING", (0, 0), (-1, -1), 7),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+        ("LEFTPADDING", (0, 0), (-1, -1), 7),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+    ]))
+
+    story.append(equipment_table)
+    story.append(Spacer(1, 12))
     # SCAN SUMMARY
     story.append(make_section_header("Scan Summary", styles))
     story.append(Spacer(1, 6))
