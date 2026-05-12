@@ -40,19 +40,28 @@ def home():
         </p>
     </div>
 
+    <div style="
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    min-width:260px;
+">
+
     <img
-    src="/static/potato_logo.png"
-    style="
-        height:150px;
-        width:auto;
-        object-fit:contain;
-        border-radius:18px;
-        padding:8px;
-        background:white;
-        box-shadow:0 8px 24px rgba(0,0,0,0.12);
-        border:1px solid rgba(0,0,0,0.08);
-    "
-/>
+        src="/static/potato_logo.png"
+        style="
+            width:220px;
+            height:auto;
+            object-fit:contain;
+            border-radius:18px;
+            padding:8px;
+            background:white;
+            box-shadow:0 8px 24px rgba(0,0,0,0.12);
+            border:1px solid rgba(0,0,0,0.08);
+        "
+    />
+
+</div>
 
         <form id="form">
             <h3>Scan Upload</h3>
