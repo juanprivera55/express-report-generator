@@ -473,6 +473,52 @@ def build_pdf_report(data, output_path, report_type="customer"):
 
         story.append(KeepTogether([dtc_header, dtc_table, Spacer(1, 10)]))
 
+        # ESTIMATE / REPAIR TRIGGER ANALYSIS
+    estimate_analysis = data.get("estimate_analysis", {})
+    estimate_triggers = estimate_analysis.get("estimate_triggers", [])
+    estimate_recommendations = estimate_analysis.get("estimate_recommendations", [])
+
+    story.append(make_section_header("Estimate / Repair Trigger Analysis", styles))
+    story.append(Spacer(1, 6))
+
+    if not estimate_triggers:
+        story.append(p(
+            "No estimate-based calibration triggers were detected, or no estimate PDF was uploaded.",
+            normal
+        ))
+    else:
+        trigger_rows = []
+
+        for trigger in estimate_triggers:
+            label = trigger.get("label", "Repair Trigger")
+            keywords = ", ".join(trigger.get("matched_keywords", []))
+
+            trigger_rows.append([
+                build_badge("DETECTED", BLUE),
+                p(f"<b>{label}</b><br/>Matched estimate terms: {keywords}", table_text)
+            ])
+
+        trigger_table = Table(trigger_rows, colWidths=[110, 400])
+        trigger_table.setStyle(TableStyle([
+            ("GRID", (0, 0), (-1, -1), 0.35, MID_GRAY),
+            ("BACKGROUND", (0, 0), (-1, -1), colors.white),
+            ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ("TOPPADDING", (0, 0), (-1, -1), 7),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 7),
+            ("LEFTPADDING", (0, 0), (-1, -1), 7),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 7),
+        ]))
+
+        story.append(trigger_table)
+        story.append(Spacer(1, 8))
+
+        if estimate_recommendations:
+            story.append(ListFlowable([
+                ListItem(p(x, normal), leftIndent=12)
+                for x in estimate_recommendations
+            ], bulletType="bullet"))
+
+    story.append(Spacer(1, 12))
     # OEM CALIBRATION MATRIX
     story.append(make_section_header("OEM-Style Calibration Matrix", styles))
     story.append(Spacer(1, 6))
