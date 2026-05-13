@@ -333,8 +333,9 @@ def build_oem_calibration_matrix(
             "Radar/adaptive cruise related faults detected."
         )
 
-        # OEM-SPECIFIC RULE MODULES
-        for item in honda_oem_rules(
+    # OEM-SPECIFIC RULE MODULES
+
+    for item in honda_oem_rules(
         vehicle_info=vehicle_info,
         estimate_analysis=estimate_analysis,
         adas_equipment=adas_equipment,
@@ -369,6 +370,7 @@ def build_oem_calibration_matrix(
             item.get("confidence", "MODERATE"),
             item.get("reason", "")
         )
+
     # Remove duplicates
     unique = []
     seen = set()
