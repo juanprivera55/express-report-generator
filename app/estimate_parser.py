@@ -1,3 +1,4 @@
+from app.repair_operation_classifier import classify_repair_operations
 import re
 
 
@@ -234,7 +235,10 @@ def parse_estimate_text(text: str):
             ]
         )
 
+    repair_classifications = classify_repair_operations(clean)
+
     return {
-        "estimate_triggers": triggers,
-        "estimate_recommendations": recommendations
-    }
+       "estimate_triggers": triggers,
+       "estimate_recommendations": recommendations,
+       "repair_classifications": repair_classifications
+}
