@@ -23,10 +23,16 @@ def honda_oem_rules(vehicle_info, estimate_analysis, adas_equipment, impact_area
 
     estimate_analysis = estimate_analysis or {}
     triggers = estimate_analysis.get("estimate_triggers", [])
+    repair_classifications = estimate_analysis.get("repair_classifications", [])
 
     trigger_text = " ".join([
         f"{x.get('trigger', '')} {x.get('label', '')} {' '.join(x.get('matched_keywords', []))}"
         for x in triggers
+    ]).lower()
+
+    repair_text = " ".join([
+       f"{x.get('line', '')} {x.get('severity', '')} {' '.join(x.get('flags', []))}"
+       for x in repair_classifications
     ]).lower()
 
     equipment_text = " ".join([
@@ -111,30 +117,35 @@ def honda_oem_rules(vehicle_info, estimate_analysis, adas_equipment, impact_area
         "door"
     ])
 
-    geometry_affecting_repair_detected = any(x in trigger_text for x in [
-        "rear structural",
-        "front structural",
-        "body pull",
-        "structural",
-        "rear body panel",
-        "quarter panel",
-        "rear_bumper",
-        "front_bumper",
-        "rear door",
-        "front door",
-        "door side repair",
-        "fender",
-        "frame rail",
-        "radiator support",
-        "bumper reinforcement",
-        "reinforcement",
-        "apron",
-        "unibody",
-        "weld",
-        "section",
-        "replace panel",
-        "repair panel"
-    ])
+    geometry_source_text = f"{trigger_text} {repair_text}"
+
+    geometry_affecting_repair_detected = any(x in geometry_source_text for x in [
+       "rear structural",
+       "front structural",
+       "body pull",
+       "structural",
+       "rear body panel",
+       "quarter panel",
+       "rear_bumper",
+       "front_bumper",
+       "rear door",
+       "front door",
+       "door side repair",
+       "fender",
+       "frame rail",
+       "radiator support",
+       "bumper reinforcement",
+       "reinforcement",
+       "apron",
+       "unibody",
+       "weld",
+       "section",
+       "replace panel",
+       "repair panel",
+       "geometry_affecting",
+       "sensor_adjacent",
+       "HIGH"
+])
 
     # Honda collision safety logic
     if collision_detected:
