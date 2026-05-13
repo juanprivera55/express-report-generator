@@ -135,11 +135,14 @@ def build_pdf_report(data, output_path, report_type="customer"):
 
     adas_equipment = detect_probable_adas_equipment(vehicle_info)
 
+    estimate_analysis = data.get("estimate_analysis", {})
+
     oem_matrix = build_oem_calibration_matrix(
-        vehicle_info,
-        dtcs,
-        adas_equipment,
-        impact_area
+       vehicle_info,
+       dtcs,
+       adas_equipment,
+       impact_area,
+       estimate_analysis
     )
 
     adas_operations = detect_adas_operations(

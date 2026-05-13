@@ -2,9 +2,17 @@ def build_oem_calibration_matrix(
     vehicle_info,
     dtcs,
     adas_equipment,
-    impact_area=""
+    impact_area="",
+    estimate_analysis=None
 ):
     recommendations = []
+    estimate_analysis = estimate_analysis or {}
+    estimate_triggers = estimate_analysis.get("estimate_triggers", [])
+    estimate_recommendations = estimate_analysis.get("estimate_recommendations", [])
+    estimate_trigger_text = " ".join([
+        f"{x.get('trigger', '')} {x.get('label', '')} {' '.join(x.get('matched_keywords', []))}"
+        for x in estimate_triggers
+    ]).lower()
 
     def add(system, confidence, reason):
         recommendations.append({
@@ -247,6 +255,57 @@ def build_oem_calibration_matrix(
             "VSA sensor neutral position memorization review",
             "MODERATE",
             "Honda/Acura collision-related service logic: VSA/steering sensor neutral position memorization may be required when alignment, steering, suspension, or aiming operations are involved."
+        )
+        # ESTIMATE-BASED HONDA / ACURA LOGIC
+    if is_honda_acura and ("collision_indicated" in estimate_trigger_text or collision_indicated):
+        add(
+            "Seat weight sensor initialization / passenger weight sensor check",
+            "HIGH",
+            "Honda/Acura collision-related logic: passenger seat weight sensor initialization or verification should be reviewed after collision repairs."
+        )
+
+        add(
+            "SRS deployment history check",
+            "HIGH",
+            "Honda/Acura collision-related logic: SRS deployment history should be checked when the vehicle has been involved in a collision."
+        )
+
+    if is_honda_acura and (
+        "wheel_alignment" in estimate_trigger_text
+        or "front radar" in combined
+        or "camera" in combined
+        or "radar" in combined
+    ):
+        add(
+            "Wheel alignment check before camera/radar aiming",
+            "HIGH",
+            "Honda/Acura logic: if aiming a radar or camera is necessary due to collision repairs, a four-wheel alignment check should be reviewed."
+        )
+
+        add(
+            "VSA sensor neutral position memorization",
+            "HIGH",
+            "Honda/Acura logic: VSA sensor neutral position memorization should be reviewed after wheel alignment or steering-related calibration operations."
+        )
+
+    if is_honda_acura and (
+        "rear_bumper" in estimate_trigger_text
+        or "rear_park_sensor" in estimate_trigger_text
+    ):
+        add(
+            "Rear park sensor reset/calibration",
+            "HIGH",
+            "Rear bumper or rear park sensor operation detected on Honda/Acura estimate."
+        )
+
+    if is_honda_acura and (
+        "quarter_panel_blindspot" in estimate_trigger_text
+        or "left_rear_impact" in estimate_trigger_text
+    ):
+        add(
+            "Blind spot radar aiming inspection",
+            "HIGH",
+            "Quarter panel, rear structural, or left rear impact repair detected with likely blind spot system equipment."
         )
     # DTC-BASED INTELLIGENCE
     if any(x in dtc_text for x in ["communication", "gateway", "u0140", "u0146", "u1123"]):
