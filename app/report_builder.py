@@ -11,7 +11,7 @@ from app.dtc_library import lookup_dtc
 from app.adas_rules import detect_adas_operations, impact_area_label
 from app.adas_equipment import detect_probable_adas_equipment
 from app.oem_calibration_matrix import build_oem_calibration_matrix
-
+from app.confidence_engine import enrich_recommendations
 
 LOGO_PATH = "assets/logo.png"
 
@@ -144,7 +144,7 @@ def build_pdf_report(data, output_path, report_type="customer"):
        impact_area,
        estimate_analysis
     )
-
+    oem_matrix = enrich_recommendations(oem_matrix)
     adas_operations = detect_adas_operations(
         dtcs,
         impact_area=impact_area,
@@ -547,9 +547,11 @@ def build_pdf_report(data, output_path, report_type="customer"):
 
     matrix_rows = []
     for item in oem_matrix:
-        confidence = item.get("confidence", "MODERATE")
+        confidence = item.get("tier", item.get("confidence", "MODERATE"))
+        score = item.get("score", "")
         system = item.get("system", "Unknown")
         reason = item.get("reason", "")
+        trigger_reasons = item.get("trigger_reasons", [])
 
         if confidence == "HIGH":
             conf_color = RED
@@ -558,9 +560,19 @@ def build_pdf_report(data, output_path, report_type="customer"):
         else:
             conf_color = TEXT_GRAY
 
+        trigger_text = "<br/>".join([f"• {x}" for x in trigger_reasons])
+
+        score_text = f"<br/><b>Confidence Score:</b> {score}/100" if score != "" else ""
+
         matrix_rows.append([
             build_badge(confidence, conf_color),
-            p(f"<b>{system}</b><br/>{reason}", table_text)
+            p(
+                f"<b>{system}</b><br/>"
+                f"{reason}"
+                f"{score_text}"
+                f"<br/><b>Triggered By:</b><br/>{trigger_text}",
+                table_text
+            )
         ])
 
     if matrix_rows:
