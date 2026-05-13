@@ -42,19 +42,37 @@ def honda_oem_rules(vehicle_info, estimate_analysis, adas_equipment, impact_area
     )
 
     has_camera = any(x in equipment_text for x in [
-        "camera", "lkas", "honda sensing", "multipurpose", "lane"
+        "camera",
+        "lkas",
+        "honda sensing",
+        "multipurpose",
+        "lane"
     ])
 
     has_radar = any(x in equipment_text for x in [
-        "radar", "adaptive cruise", "acc", "cmbs"
+        "radar",
+        "adaptive cruise",
+        "acc",
+        "cmbs"
     ])
 
     has_bsi = any(x in equipment_text for x in [
-        "blind spot", "bsi", "lane change"
+        "blind spot",
+        "bsi",
+        "lane change"
     ])
 
     has_parking = any(x in equipment_text for x in [
-        "parking", "park sensor", "parking aid"
+        "parking",
+        "park sensor",
+        "parking aid"
+    ])
+
+    has_multiview = any(x in equipment_text for x in [
+        "multi view",
+        "surround",
+        "aerial",
+        "ground view"
     ])
 
     rear_body_trigger = any(x in trigger_text for x in [
@@ -63,14 +81,20 @@ def honda_oem_rules(vehicle_info, estimate_analysis, adas_equipment, impact_area
         "quarter_panel_blindspot",
         "left_rear_impact",
         "rear body",
-        "quarter panel"
+        "quarter panel",
+        "rear structural",
+        "body pull",
+        "rear body panel",
+        "structural"
     ])
 
     front_body_trigger = any(x in trigger_text for x in [
         "front_bumper",
         "front radar",
         "grille",
-        "front structural"
+        "front structural",
+        "radiator support",
+        "bumper reinforcement"
     ])
 
     glass_trigger = any(x in trigger_text for x in [
@@ -87,8 +111,34 @@ def honda_oem_rules(vehicle_info, estimate_analysis, adas_equipment, impact_area
         "door"
     ])
 
+    geometry_affecting_repair_detected = any(x in trigger_text for x in [
+        "rear structural",
+        "front structural",
+        "body pull",
+        "structural",
+        "rear body panel",
+        "quarter panel",
+        "rear_bumper",
+        "front_bumper",
+        "rear door",
+        "front door",
+        "door side repair",
+        "fender",
+        "frame rail",
+        "radiator support",
+        "bumper reinforcement",
+        "reinforcement",
+        "apron",
+        "unibody",
+        "weld",
+        "section",
+        "replace panel",
+        "repair panel"
+    ])
+
     # Honda collision safety logic
     if collision_detected:
+
         add(
             "Seat weight sensor initialization / passenger weight sensor check",
             "HIGH",
@@ -103,6 +153,7 @@ def honda_oem_rules(vehicle_info, estimate_analysis, adas_equipment, impact_area
 
     # Honda alignment before aiming logic
     if collision_detected and (has_camera or has_radar):
+
         add(
             "Four-wheel alignment check before camera/radar aiming",
             "HIGH",
@@ -115,8 +166,30 @@ def honda_oem_rules(vehicle_info, estimate_analysis, adas_equipment, impact_area
             "Honda logic: VSA sensor neutral position memorization should be reviewed when wheel alignment, steering, or camera/radar aiming operations are involved."
         )
 
+    # Honda collision geometry logic
+    if geometry_affecting_repair_detected and (has_camera or has_radar):
+
+        add(
+            "Multipurpose camera aiming review",
+            "HIGH",
+            "Honda collision geometry logic: non-minor exterior, structural, or bolt-on panel repairs may affect vehicle geometry, ride height, thrust angle, centerline, or camera aiming relationships."
+        )
+
+        add(
+            "Millimeter wave radar aiming review",
+            "HIGH",
+            "Honda collision geometry logic: non-minor exterior, structural, or bumper reinforcement repairs may affect radar aiming relationships and vehicle centerline geometry."
+        )
+
+        add(
+            "Four-wheel alignment verification",
+            "HIGH",
+            "Honda collision geometry logic: panel, structural, suspension, or collision repairs should include alignment/thrust-angle verification before final ADAS aiming when camera or radar systems are involved."
+        )
+
     # Honda front radar / front structure
     if front_body_trigger and has_radar:
+
         add(
             "Millimeter wave radar aiming",
             "HIGH",
@@ -125,6 +198,7 @@ def honda_oem_rules(vehicle_info, estimate_analysis, adas_equipment, impact_area
 
     # Honda camera / windshield
     if glass_trigger and has_camera:
+
         add(
             "Multipurpose camera aiming",
             "HIGH",
@@ -133,6 +207,7 @@ def honda_oem_rules(vehicle_info, estimate_analysis, adas_equipment, impact_area
 
     # Honda rear body / BSI
     if rear_body_trigger and has_bsi:
+
         add(
             "BSI radar unit aiming inspection",
             "HIGH",
@@ -147,6 +222,7 @@ def honda_oem_rules(vehicle_info, estimate_analysis, adas_equipment, impact_area
 
     # Honda rear park sensors
     if rear_body_trigger and has_parking:
+
         add(
             "Rear park sensor reset / parking and back-up sensor control unit verification",
             "HIGH",
@@ -154,12 +230,16 @@ def honda_oem_rules(vehicle_info, estimate_analysis, adas_equipment, impact_area
         )
 
     # Honda multi-view camera
-    if any(x in equipment_text for x in ["multi view", "surround", "aerial", "ground view"]):
-        if front_body_trigger or rear_body_trigger or door_or_mirror_trigger:
-            add(
-                "Multi-view camera system aiming / verification",
-                "HIGH",
-                "Honda logic: front grille, front bumper, mirrors, doors, tailgate, or rear camera-related repairs may affect multi-view camera calibration."
-            )
+    if has_multiview and (
+        front_body_trigger
+        or rear_body_trigger
+        or door_or_mirror_trigger
+    ):
+
+        add(
+            "Multi-view camera system aiming / verification",
+            "HIGH",
+            "Honda logic: front grille, front bumper, mirrors, doors, tailgate, or rear camera-related repairs may affect multi-view camera calibration."
+        )
 
     return recommendations
