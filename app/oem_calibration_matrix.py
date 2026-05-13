@@ -334,7 +334,7 @@ def build_oem_calibration_matrix(
         )
 
         # OEM-SPECIFIC RULE MODULES
-    for item in honda_oem_rules(
+        for item in honda_oem_rules(
         vehicle_info=vehicle_info,
         estimate_analysis=estimate_analysis,
         adas_equipment=adas_equipment,
@@ -345,7 +345,8 @@ def build_oem_calibration_matrix(
             item.get("confidence", "MODERATE"),
             item.get("reason", "")
         )
-     for item in toyota_oem_rules(
+
+    for item in toyota_oem_rules(
         vehicle_info=vehicle_info,
         estimate_analysis=estimate_analysis,
         adas_equipment=adas_equipment,
@@ -356,7 +357,8 @@ def build_oem_calibration_matrix(
             item.get("confidence", "MODERATE"),
             item.get("reason", "")
         )
-     for item in ford_oem_rules(
+
+    for item in ford_oem_rules(
         vehicle_info=vehicle_info,
         estimate_analysis=estimate_analysis,
         adas_equipment=adas_equipment,
