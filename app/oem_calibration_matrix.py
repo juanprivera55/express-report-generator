@@ -1,3 +1,5 @@
+from app.oem_rules.honda import honda_oem_rules
+
 def build_oem_calibration_matrix(
     vehicle_info,
     dtcs,
@@ -327,6 +329,19 @@ def build_oem_calibration_matrix(
             "Radar system verification",
             "HIGH",
             "Radar/adaptive cruise related faults detected."
+        )
+
+        # OEM-SPECIFIC RULE MODULES
+    for item in honda_oem_rules(
+        vehicle_info=vehicle_info,
+        estimate_analysis=estimate_analysis,
+        adas_equipment=adas_equipment,
+        impact_area=impact_area
+    ):
+        add(
+            item.get("system", "OEM recommendation"),
+            item.get("confidence", "MODERATE"),
+            item.get("reason", "")
         )
 
     # Remove duplicates
