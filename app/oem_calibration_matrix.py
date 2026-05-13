@@ -1,4 +1,5 @@
 from app.oem_rules.honda import honda_oem_rules
+from app.oem_rules.toyota import toyota_oem_rules
 
 def build_oem_calibration_matrix(
     vehicle_info,
@@ -333,6 +334,17 @@ def build_oem_calibration_matrix(
 
         # OEM-SPECIFIC RULE MODULES
     for item in honda_oem_rules(
+        vehicle_info=vehicle_info,
+        estimate_analysis=estimate_analysis,
+        adas_equipment=adas_equipment,
+        impact_area=impact_area
+    ):
+        add(
+            item.get("system", "OEM recommendation"),
+            item.get("confidence", "MODERATE"),
+            item.get("reason", "")
+        )
+        for item in toyota_oem_rules(
         vehicle_info=vehicle_info,
         estimate_analysis=estimate_analysis,
         adas_equipment=adas_equipment,
