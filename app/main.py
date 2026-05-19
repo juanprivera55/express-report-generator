@@ -52,6 +52,12 @@ def home():
             <h3>Scan Upload</h3>
             <input type="file" id="file" accept=".pdf" required>
 
+	    <h3>Scan Certificate Type</h3>
+            <select id="scan_certificate_type" style="width:100%; padding:8px;">
+            <option value="pre_scan">Pre-Scan Certificate</option>
+            <option value="post_scan">Post-Scan Certificate</option>
+            </select>
+
             <h3>Optional Estimate Upload</h3>
             <p style="color:#555; margin-top:-8px;">
                 Upload CCC, Mitchell, Audatex, or repair estimate PDF to detect calibration triggers.
@@ -121,8 +127,14 @@ def home():
             const estimateFile = estimateInput.files[0];
 
             const formData = new FormData();
+            
+            formData.append(
+               "scan_certificate_type",
+               document.getElementById("scan_certificate_type").value
+            );
             formData.append("file", file);
 
+            formData.append("scan_certificate_type", document.getElementById("scan_certificate_type").value);
             if (estimateFile) {
                 formData.append("estimate_file", estimateFile);
             }
@@ -201,6 +213,7 @@ async def upload(
     repair_facility: str = Form(""),
     impact_area: str = Form(""),
     technician_notes: str = Form("")
+    scan_certificate_type: str = Form("pre_scan"),
 ):
     file_id = str(uuid.uuid4())
     upload_path = UPLOAD_DIR / f"{file_id}.pdf"
@@ -264,6 +277,7 @@ async def upload(
         "repair_facility": repair_facility or "Not provided",
         "impact_area": impact_area or "Not specified",
         "technician_notes": technician_notes or "None provided"
+        "scan_certificate_type": scan_certificate_type,
     }
 
     track_unknown_dtcs(parsed)
