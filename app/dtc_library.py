@@ -237,8 +237,8 @@ def lookup_dtc(code: str, vehicle_info=None):
     base = code.split(":")[0].split("-")[0].upper()
 
     # EXACT MATCHES
-    if base in DTC_DATABASE:
-        return DTC_DATABASE[base]
+    if base in DTC_LIBRARY:
+        return DTC_LIBRARY[base]
 
     vehicle_text = " ".join([
         str(vehicle_info.get("vehicle", "")),
