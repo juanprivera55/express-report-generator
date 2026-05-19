@@ -332,6 +332,51 @@ def build_pdf_report(data, output_path, report_type="customer"):
     ]
     story.append(make_info_table(vehicle_rows, table_label, table_text))
     story.append(Spacer(1, 12))
+    
+        # SCAN COMPLETION CERTIFICATE
+    cert_type = intake.get("scan_certificate_type", "pre_scan")
+
+    cert_title = (
+        "Pre-Scan Completion Certificate"
+        if cert_type == "pre_scan"
+        else "Post-Scan Completion Certificate"
+    )
+
+    cert_statement = (
+        "This certifies that a pre-repair diagnostic scan was completed before repair planning to identify diagnostic trouble codes, ADAS-related faults, network communication concerns, and safety system conditions."
+        if cert_type == "pre_scan"
+        else
+        "This certifies that a post-repair diagnostic scan was completed after repairs to verify diagnostic trouble codes, ADAS-related faults, network communication concerns, and safety system status."
+    )
+
+    story.append(make_section_header(cert_title, styles))
+    story.append(Spacer(1, 6))
+
+    cert_text = f"""
+    <b>Scan Completion Acknowledgment</b><br/><br/>
+    {cert_statement}<br/><br/>
+    Performing pre-repair and post-repair scans supports OEM repair procedure compliance, repair planning accuracy,
+    safety system verification, and documentation for the repair facility, vehicle owner, and insurance carrier.<br/><br/>
+    <b>Repair Facility:</b> {intake.get("repair_facility", "Not provided")}<br/>
+    <b>Technician:</b> {intake.get("technician", "Not provided")}<br/>
+    <b>RO Number:</b> {intake.get("ro_number", "Not provided")}<br/>
+    <b>Vehicle:</b> {vehicle_info.get("vehicle", "Not detected")}<br/>
+    <b>VIN:</b> {vehicle_info.get("vin", "Not detected")}<br/>
+    <b>Scan Date:</b> {vehicle_info.get("scan_date", "Not detected")}
+    """
+
+    cert_table = Table([[p(cert_text, normal)]], colWidths=[510])
+    cert_table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#ECFDF5")),
+        ("BOX", (0, 0), (-1, -1), 1.0, GREEN),
+        ("TOPPADDING", (0, 0), (-1, -1), 12),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
+        ("LEFTPADDING", (0, 0), (-1, -1), 12),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 12),
+    ]))
+
+    story.append(cert_table)
+    story.append(Spacer(1, 12))
 
     # PROBABLE ADAS EQUIPMENT
     story.append(make_section_header("Probable ADAS Equipment", styles))
