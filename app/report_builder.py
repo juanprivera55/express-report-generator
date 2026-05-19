@@ -428,7 +428,7 @@ def build_pdf_report(data, output_path, report_type="customer"):
         module = d.get("module", "Unknown Module")
         code = d.get("code", "")
         desc = d.get("description", "")
-        intel = lookup_dtc(code)
+        intel = lookup_dtc(code, vehicle_info=vehicle_info)
 
         severity, sev_color = severity_for_dtc(code, module, desc)
 
