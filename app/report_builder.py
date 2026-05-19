@@ -335,9 +335,7 @@ def build_pdf_report(data, output_path, report_type="customer"):
     
         # SCAN COMPLETION CERTIFICATE
     cert_type = intake.get("scan_certificate_type", "pre_scan")
-    
-    story.append(make_section_header(cert_title, styles))
-   
+     
     cert_title = (
         "Pre-Scan Completion Certificate"
         if cert_type == "pre_scan"
@@ -351,9 +349,9 @@ def build_pdf_report(data, output_path, report_type="customer"):
         "This certifies that a post-repair diagnostic scan was completed after repairs to verify diagnostic trouble codes, ADAS-related faults, network communication concerns, and safety system status."
     )
 
+    story.append(PageBreak())
     story.append(make_section_header(cert_title, styles))
     story.append(Spacer(1, 6))
-    story.append(PageBreak())
 
     cert_text = f"""
     <b>Scan Completion Acknowledgment</b><br/><br/>
