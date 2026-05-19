@@ -230,130 +230,157 @@ def generic_by_code_family(code: str):
         "adas_impact": "Manufacturer-specific faults should be reviewed with the affected module. If related to camera, radar, steering, braking, parking, gateway, or body systems, ADAS verification may be required."
     }
 
-
-def lookup_dtc(code: str, vehicle_info=None):
+def get_make_family(vehicle_info=None):
     vehicle_info = vehicle_info or {}
 
-    base = code.split(":")[0].split("-")[0].upper()
-
-    # EXACT MATCHES
-    if base in DTC_LIBRARY:
-        return DTC_LIBRARY[base]
-
-    vehicle_text = " ".join([
+    text = " ".join([
         str(vehicle_info.get("vehicle", "")),
         str(vehicle_info.get("decoded_make", "")),
         str(vehicle_info.get("decoded_model", ""))
     ]).lower()
 
-    # GM / CHEVY ENHANCED FALLBACK
-    if any(x in vehicle_text for x in [
-        "chevrolet",
-        "chevy",
-        "gmc",
-        "cadillac",
-        "buick"
-    ]):
+    families = {
+        "GM/Chevrolet": ["chevrolet", "chevy", "gmc", "cadillac", "buick"],
+        "Ford/Lincoln": ["ford", "lincoln"],
+        "Toyota/Lexus": ["toyota", "lexus"],
+        "Honda/Acura": ["honda", "acura"],
+        "Nissan/Infiniti": ["nissan", "infiniti"],
+        "Hyundai/Kia/Genesis": ["hyundai", "kia", "genesis"],
+        "Mazda": ["mazda"],
+        "Subaru": ["subaru"],
+        "Stellantis": ["jeep", "dodge", "ram", "chrysler", "fiat", "alfa romeo"],
+        "Volkswagen/Audi": ["volkswagen", "vw", "audi"],
+        "BMW/Mini": ["bmw", "mini"],
+        "Mercedes-Benz": ["mercedes", "benz"],
+        "Volvo": ["volvo"],
+        "Mitsubishi": ["mitsubishi"],
+    }
 
-        if base.startswith("U"):
-            return {
-                "meaning": "GM/Chevrolet network communication fault detected.",
-                "causes": [
-                    "Low battery voltage or module reset during repair",
-                    "CAN communication interruption",
-                    "Disconnected module or loose connector",
-                    "Gateway/body network communication issue",
-                    "Module programming or wake-up concern"
-                ],
-                "fixes": [
-                    "Perform full GM network scan and identify all offline or non-communicating modules",
-                    "Verify battery voltage, grounds, and module power feeds",
-                    "Inspect connectors and wiring in the affected repair area",
-                    "Perform post-scan after repairs and verify communication restoration",
-                    "Road test and verify all safety systems operate normally"
-                ],
-                "adas_impact": "GM communication faults may affect forward camera, radar, park assist, blind zone alert, steering, braking, restraint, and other ADAS-related modules."
-            }
+    for family, names in families.items():
+        for name in names:
+            if name in text:
+                return family
 
-        if base.startswith("B"):
-            return {
-                "meaning": "GM/Chevrolet body, restraint, lighting, camera, or convenience system fault detected.",
-                "causes": [
-                    "Body control module or subsystem concern",
-                    "Lighting, restraint, camera, hatch, or park assist issue",
-                    "Collision-area wiring or connector damage",
-                    "Module initialization or calibration concern",
-                    "Repair-related low voltage or disconnected module"
-                ],
-                "fixes": [
-                    "Identify the GM module reporting the fault",
-                    "Inspect related wiring, connectors, grounds, and mounting locations",
-                    "Verify body/safety module communication",
-                    "Perform required setup, calibration, or initialization procedures",
-                    "Perform final post-scan verification"
-                ],
-                "adas_impact": "GM body/safety faults may affect park assist, side blind zone alert, cameras, lighting, restraint systems, door/hatch systems, and ADAS calibration readiness."
-            }
+    return "Manufacturer"
 
-        if base.startswith("C"):
-            return {
-                "meaning": "GM/Chevrolet chassis, steering, suspension, brake, or stability system fault detected.",
-                "causes": [
-                    "Wheel speed, steering angle, yaw, brake, or stability system issue",
-                    "Suspension or alignment-related repair concern",
-                    "Sensor wiring or connector damage",
-                    "Steering angle or chassis learn/calibration needed",
-                    "ABS/StabiliTrak module or sensor issue"
-                ],
-                "fixes": [
-                    "Inspect steering, suspension, brake, and wheel speed sensor circuits",
-                    "Verify alignment and steering angle values",
-                    "Perform ABS/StabiliTrak diagnostics",
-                    "Complete steering angle or chassis learn procedures if required",
-                    "Road test and verify stability control data after repairs"
-                ],
-                "adas_impact": "GM chassis faults may affect lane keep assist, adaptive cruise, automatic emergency braking, steering assist, traction control, and calibration eligibility."
-            }
 
-        if base.startswith("P"):
-            return {
-                "meaning": "GM/Chevrolet powertrain or emissions diagnostic fault detected.",
-                "causes": [
-                    "Engine, transmission, fuel, emissions, or drivability concern",
-                    "Sensor or actuator malfunction",
-                    "Wiring, connector, or voltage issue",
-                    "Repair-related disconnect or intermittent operating condition"
-                ],
-                "fixes": [
-                    "Review freeze-frame and live data",
-                    "Perform GM pinpoint diagnostics for the affected system",
-                    "Inspect wiring, connectors, and related components",
-                    "Repair root cause before clearing codes",
-                    "Verify code does not return after road test"
-                ],
-                "adas_impact": "GM powertrain faults may affect adaptive cruise, traction control, stability control, and drivability-related safety features depending on vehicle configuration."
-            }
+def manufacturer_enhanced_fallback(code: str, vehicle_info=None):
+    base = code.split(":")[0].split("-")[0].upper()
+    family = get_make_family(vehicle_info)
 
+    if base.startswith("U"):
         return {
-            "meaning": "GM/Chevrolet manufacturer-specific diagnostic trouble code detected.",
+            "meaning": f"{family} network communication fault detected.",
             "causes": [
-                "Manufacturer-specific module concern",
-                "Sensor, actuator, circuit, or communication fault",
-                "Repair-area wiring or connector issue",
-                "Module setup, learn, programming, or calibration requirement"
+                "Low battery voltage or module reset during repair",
+                "CAN/LIN/FlexRay communication interruption",
+                "Disconnected module or loose connector",
+                "Gateway/body network communication issue",
+                "Module programming, wake-up, or configuration concern"
             ],
             "fixes": [
-                "Identify the reporting GM module and subsystem",
-                "Review GM service information for code-specific diagnostics",
-                "Inspect affected wiring, connectors, sensors, and mounting points",
-                "Perform setup, learn, calibration, or programming as required",
-                "Complete final post-scan and functional validation"
+                f"Perform a full {family} network scan and identify offline or non-communicating modules",
+                "Verify battery voltage, grounds, and module power feeds",
+                "Inspect connectors and wiring in the affected repair area",
+                "Clear codes only after repair and verify communication restoration",
+                "Perform final post-scan and functional road test validation"
             ],
-            "adas_impact": "GM manufacturer-specific codes should be reviewed against affected modules. If related to camera, radar, park assist, blind zone, steering, brake, restraint, or network systems, ADAS verification may be required."
+            "adas_impact": f"{family} communication faults may affect camera, radar, parking, blind spot, steering, braking, restraint, gateway, and other ADAS-related modules."
         }
 
-    # GENERIC FALLBACK
-    return generic_by_code_family(base)
+    if base.startswith("B"):
+        return {
+            "meaning": f"{family} body, restraint, lighting, camera, parking, or convenience system fault detected.",
+            "causes": [
+                "Body control module or subsystem concern",
+                "Lighting, restraint, door, liftgate, camera, parking aid, or blind spot circuit issue",
+                "Collision-area wiring, connector, or mounting damage",
+                "Module initialization, setup, or calibration concern",
+                "Low voltage, repair-related disconnect, or intermittent fault"
+            ],
+            "fixes": [
+                f"Identify the {family} module reporting the fault",
+                "Inspect related wiring, connectors, grounds, and mounting locations",
+                "Verify body/safety/ADAS module communication",
+                "Perform required setup, calibration, learn, or initialization procedures",
+                "Complete post-scan verification and confirm the code does not return"
+            ],
+            "adas_impact": f"{family} body/safety faults can affect park assist, blind spot monitoring, cameras, lighting, restraint systems, door/hatch systems, and ADAS calibration readiness."
+        }
+
+    if base.startswith("C"):
+        return {
+            "meaning": f"{family} chassis, steering, suspension, brake, or stability system fault detected.",
+            "causes": [
+                "Wheel speed, steering angle, yaw, brake, suspension, or stability system issue",
+                "Suspension, steering, or alignment-related repair concern",
+                "Sensor wiring, connector, or mounting damage",
+                "Steering angle, yaw rate, or chassis sensor learn/calibration needed",
+                "ABS/stability control module or sensor issue"
+            ],
+            "fixes": [
+                "Inspect steering, suspension, brake, and wheel speed sensor circuits",
+                "Verify alignment, ride height, steering angle, and stability control data",
+                f"Perform {family} chassis/stability control diagnostics",
+                "Complete steering angle, yaw rate, or chassis sensor learn procedures if required",
+                "Road test and verify stability control data after repairs"
+            ],
+            "adas_impact": f"{family} chassis faults may affect lane keep assist, adaptive cruise, automatic emergency braking, steering assist, traction/stability control, and calibration eligibility."
+        }
+
+    if base.startswith("P"):
+        return {
+            "meaning": f"{family} powertrain or emissions diagnostic fault detected.",
+            "causes": [
+                "Engine, transmission, fuel, emissions, or drivability concern",
+                "Sensor or actuator malfunction",
+                "Wiring, connector, or voltage issue",
+                "Repair-related disconnect or intermittent operating condition"
+            ],
+            "fixes": [
+                "Review freeze-frame and live data",
+                f"Perform {family} diagnostics for the affected system",
+                "Inspect wiring, connectors, and related components",
+                "Repair root cause before clearing codes",
+                "Verify code does not return after road test"
+            ],
+            "adas_impact": f"{family} powertrain faults may affect adaptive cruise, traction control, stability control, and drivability-related safety features depending on vehicle configuration."
+        }
+
+    return {
+        "meaning": f"{family} manufacturer-specific diagnostic trouble code detected.",
+        "causes": [
+            "Manufacturer-specific module concern",
+            "Sensor, actuator, circuit, or communication fault",
+            "Repair-area wiring or connector issue",
+            "Module setup, learn, programming, or calibration requirement",
+            "Low voltage or intermittent module condition"
+        ],
+        "fixes": [
+            f"Identify the reporting {family} module and subsystem",
+            f"Review {family} service information for code-specific diagnostics",
+            "Inspect affected wiring, connectors, sensors, and mounting points",
+            "Perform setup, learn, calibration, or programming as required",
+            "Complete final post-scan and functional validation"
+        ],
+        "adas_impact": f"{family} manufacturer-specific codes should be reviewed against the affected module. If related to camera, radar, park assist, blind spot, steering, brake, restraint, or network systems, ADAS verification may be required."
+    }
+
+
+def lookup_dtc(code: str, vehicle_info=None):
+    base = code.split(":")[0].split("-")[0].upper()
+
+    if base in DTC_LIBRARY:
+        return DTC_LIBRARY[base]
+
+    if len(base) > 5 and base[:5] in DTC_LIBRARY:
+        return DTC_LIBRARY[base[:5]]
+
+    if len(base) > 4 and base[:4] in DTC_LIBRARY:
+        return DTC_LIBRARY[base[:4]]
+
+    return manufacturer_enhanced_fallback(base, vehicle_info=vehicle_info)
+
 def is_known_dtc(code: str):
     base = code.split(":")[0].split("-")[0].upper()
 
