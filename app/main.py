@@ -212,7 +212,7 @@ async def upload(
     technician: str = Form(""),
     repair_facility: str = Form(""),
     impact_area: str = Form(""),
-    technician_notes: str = Form("")
+    technician_notes: str = Form(""),
     scan_certificate_type: str = Form("pre_scan"),
 ):
     file_id = str(uuid.uuid4())
