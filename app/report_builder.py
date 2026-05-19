@@ -1,6 +1,6 @@
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-    ListFlowable, ListItem, Image, KeepTogether
+    ListFlowable, ListItem, Image, KeepTogether, PageBreak
 )
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -334,6 +334,7 @@ def build_pdf_report(data, output_path, report_type="customer"):
     story.append(Spacer(1, 12))
     
         # SCAN COMPLETION CERTIFICATE
+    story.append(PageBreak())
     cert_type = intake.get("scan_certificate_type", "pre_scan")
 
     cert_title = (
@@ -351,6 +352,7 @@ def build_pdf_report(data, output_path, report_type="customer"):
 
     story.append(make_section_header(cert_title, styles))
     story.append(Spacer(1, 6))
+    story.append(PageBreak())
 
     cert_text = f"""
     <b>Scan Completion Acknowledgment</b><br/><br/>
