@@ -334,9 +334,10 @@ def build_pdf_report(data, output_path, report_type="customer"):
     story.append(Spacer(1, 12))
     
         # SCAN COMPLETION CERTIFICATE
-    story.append(PageBreak())
     cert_type = intake.get("scan_certificate_type", "pre_scan")
-
+    
+    story.append(make_section_header(cert_title, styles))
+   
     cert_title = (
         "Pre-Scan Completion Certificate"
         if cert_type == "pre_scan"
