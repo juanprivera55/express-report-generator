@@ -269,16 +269,16 @@ async def upload(
         parsed["vehicle_info"] = vehicle_info
 
     parsed["intake"] = {
-        "customer_name": customer_name or "Not provided",
-        "ro_number": ro_number or "Not provided",
-        "insurance_company": insurance_company or "Not provided",
-        "claim_number": claim_number or "Not provided",
-        "technician": technician or "Not provided",
-        "repair_facility": repair_facility or "Not provided",
-        "impact_area": impact_area or "Not specified",
-        "technician_notes": technician_notes or "None provided"
-        "scan_certificate_type": scan_certificate_type,
-    }
+    "customer_name": customer_name or "Not provided",
+    "ro_number": ro_number or "Not provided",
+    "insurance_company": insurance_company or "Not provided",
+    "claim_number": claim_number or "Not provided",
+    "technician": technician or "Not provided",
+    "repair_facility": repair_facility or "Not provided",
+    "impact_area": impact_area or "Not specified",
+    "technician_notes": technician_notes or "None provided",
+    "scan_certificate_type": scan_certificate_type,
+}
 
     track_unknown_dtcs(parsed)
 
