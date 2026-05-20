@@ -348,23 +348,24 @@ def manufacturer_enhanced_fallback(code: str, vehicle_info=None):
         }
 
     return {
-        "meaning": f"{family} manufacturer-specific diagnostic trouble code detected.",
-        "causes": [
-            "Manufacturer-specific module concern",
-            "Sensor, actuator, circuit, or communication fault",
-            "Repair-area wiring or connector issue",
-            "Module setup, learn, programming, or calibration requirement",
-            "Low voltage or intermittent module condition"
-        ],
-        "fixes": [
-            f"Identify the reporting {family} module and subsystem",
-            f"Review {family} service information for code-specific diagnostics",
-            "Inspect affected wiring, connectors, sensors, and mounting points",
-            "Perform setup, learn, calibration, or programming as required",
-            "Complete final post-scan and functional validation"
-        ],
-        "adas_impact": f"{family} manufacturer-specific codes should be reviewed against the affected module. If related to camera, radar, park assist, blind spot, steering, brake, restraint, or network systems, ADAS verification may be required."
-    }
+    "meaning": f"{family} enhanced OEM diagnostic code detected in the affected module/system.",
+    "causes": [
+        "OEM-specific sensor, actuator, circuit, or module concern",
+        "Collision-area wiring, connector, or mounting issue",
+        "Low voltage or module reset during repair",
+        "Module setup, learn, calibration, or programming requirement",
+        "System-specific fault that requires OEM scan-tool diagnostics"
+    ],
+    "fixes": [
+        f"Identify the reporting {family} module and affected system",
+        "Review the scan description, module name, and repair area together",
+        "Inspect related wiring, connectors, sensors, brackets, and mounting points",
+        "Perform OEM service-information diagnostics for that module/system",
+        "Complete required setup, learn, calibration, initialization, or programming",
+        "Perform final post-scan and functional validation"
+    ],
+    "adas_impact": f"This {family} code should be evaluated based on the reporting module. If the module relates to camera, radar, parking assist, blind spot, steering, braking, restraint, body control, or network communication, ADAS or safety-system verification may be required."
+}
 
 
 def lookup_dtc(code: str, vehicle_info=None):
